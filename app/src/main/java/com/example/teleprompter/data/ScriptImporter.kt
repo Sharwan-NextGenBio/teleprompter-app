@@ -52,7 +52,7 @@ class ScriptImporter(private val context: Context) {
         return ""
     }
 
-    private fun displayName(uri: Uri): String =
+    fun displayName(uri: Uri): String =
         context.contentResolver.query(uri, null, null, null, null)?.use { c ->
             val i = c.getColumnIndex(OpenableColumns.DISPLAY_NAME)
             if (i >= 0 && c.moveToFirst()) c.getString(i) else null
