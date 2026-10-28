@@ -207,7 +207,11 @@ private fun AppRoot(darkTheme: Boolean, onDarkThemeChange: (Boolean) -> Unit) {
     }
 
     if (studio) {
-        RecordingScreen(onBack = { studio = false }, cameraEnabled = cameraEnabled)
+        RecordingScreen(
+            onBack = { studio = false },
+            cameraEnabled = cameraEnabled,
+            onSettings = { studio = false; showSettings = true }
+        )
         return
     }
 
