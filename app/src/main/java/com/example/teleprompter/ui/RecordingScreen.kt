@@ -5,6 +5,7 @@ import androidx.camera.video.Quality
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -85,39 +86,68 @@ fun RecordingScreen(onBack: () -> Unit, vm: RecordingViewModel = viewModel()) {
     Box(Modifier.fillMaxSize()) {
         AndroidView({ previewView }, Modifier.fillMaxSize())
 
+        Row(
+            Modifier.align(Alignment.TopCenter).fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Surface(color = Color(0xCC08090D), shape = RoundedCornerShape(50)) {
+                Row(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text("●", color = Color(0xFFFFC857), fontSize = 11.sp)
+                    Spacer(Modifier.width(7.dp))
+                    Text("EYE-LINE  •  CAMERA LENS", color = Color.White, fontSize = 10.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, letterSpacing = 0.6.sp)
+                }
+            }
+            Surface(color = Color(0xCC08090D), shape = RoundedCornerShape(50)) {
+                Text("$wpm WPM", Modifier.padding(horizontal = 12.dp, vertical = 8.dp), color = Color(0xFF00E5D4), fontSize = 11.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+            }
+        }
+
         // Reading zone hugging the top edge, right under the selfie lens.
         AutoScrollTeleprompter(
-            text, style.copy(bgAlpha = 0.45f), playing, wpm, voice, speaking, matched,
-            Modifier.fillMaxWidth().fillMaxHeight(0.33f).align(Alignment.TopCenter)
+            text, style.copy(bgAlpha = 0.82f), playing, wpm, voice, speaking, matched,
+            Modifier.fillMaxWidth().fillMaxHeight(0.44f).padding(horizontal = 12.dp, vertical = 54.dp).align(Alignment.TopCenter)
         )
 
         if (countdown > 0) {
             Text("$countdown", fontSize = 120.sp, color = Color.White, modifier = Modifier.align(Alignment.Center))
         }
 
-        Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(16.dp)) {
-            Waveform(wave, Modifier.fillMaxWidth().height(40.dp))
-            Spacer(Modifier.height(8.dp))
-            Row(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onBack) { Icon(Icons.Default.ArrowBack, "Back", tint = Color.White) }
-                IconButton({ front = !front }, enabled = !recording) {
-                    Icon(Icons.Default.FlipCameraAndroid, "Flip", tint = Color.White)
+        Surface(
+            Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(horizontal = 12.dp, vertical = 14.dp),
+            color = Color(0xE613151D), shape = RoundedCornerShape(22.dp),
+            border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)),
+            shadowElevation = 12.dp
+        ) {
+            Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Icon(Icons.Default.Mic, null, tint = Color(0xFF9BA3B4), modifier = Modifier.size(17.dp))
+                    Waveform(wave, Modifier.weight(1f).height(28.dp))
+                    Text(if (voice) "VOICE FOLLOW ON" else "VOICE FOLLOW OFF", color = if (voice) Color(0xFF00E5D4) else Color(0xFF9BA3B4), fontSize = 9.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
                 }
-                FilledIconButton(
-                    onClick = { if (recording || countdown > 0) vm.stop() else vm.startWithCountdown() },
-                    modifier = Modifier.size(64.dp),
-                    colors = IconButtonDefaults.filledIconButtonColors(containerColor = Color.Red)
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(if (recording) Icons.Default.Stop else Icons.Default.FiberManualRecord, "Record", tint = Color.White)
+                    IconButton(onBack) { Icon(Icons.Default.ArrowBack, "Back", tint = Color.White) }
+                    IconButton({ front = !front }, enabled = !recording) {
+                        Icon(Icons.Default.FlipCameraAndroid, "Flip camera", tint = Color.White)
+                    }
+                    FilledIconButton(
+                        onClick = { if (recording || countdown > 0) vm.stop() else vm.startWithCountdown() },
+                        modifier = Modifier.size(58.dp),
+                        colors = IconButtonDefaults.filledIconButtonColors(containerColor = if (recording) Color(0xFFE5484D) else Color(0xFF00E5D4))
+                    ) {
+                        Icon(if (recording) Icons.Default.Stop else Icons.Default.PlayArrow, if (recording) "Stop recording" else "Start recording", tint = if (recording) Color.White else Color(0xFF00201D), modifier = Modifier.size(27.dp))
+                    }
+                    IconButton({ muted = !muted; vm.recorder.setMuted(muted) }) {
+                        Icon(if (muted) Icons.Default.MicOff else Icons.Default.Mic, if (muted) "Unmute" else "Mute", tint = if (muted) Color(0xFFE5484D) else Color.White)
+                    }
+                    TextButton({ uhd = !uhd }, enabled = !recording) {
+                        Text(if (uhd) "4K" else "1080p", color = Color.White, fontSize = 11.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                    }
                 }
-                IconButton({ muted = !muted; vm.recorder.setMuted(muted) }) {
-                    Icon(if (muted) Icons.Default.MicOff else Icons.Default.Mic, "Mute", tint = Color.White)
-                }
-                TextButton({ uhd = !uhd }, enabled = !recording) { Text(if (uhd) "4K" else "1080p", color = Color.White) }
             }
         }
     }
