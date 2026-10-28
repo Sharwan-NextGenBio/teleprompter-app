@@ -28,9 +28,9 @@ import com.example.teleprompter.engine.TeleprompterSession
 import kotlin.math.abs
 
 /** Wrap words in ==double equals== to get a highlight marker. */
-fun parseHighlights(src: String, bg: Color = Color(0xFFFFEB3B)): AnnotatedString = buildAnnotatedString {
+fun parseHighlights(src: String, bg: Color = Color(0xFFFFEB3B), neon: Boolean = false): AnnotatedString = buildAnnotatedString {
     src.split("==").forEachIndexed { i, part ->
-        if (i % 2 == 1) withStyle(SpanStyle(background = bg, color = Color.Black)) { append(part) }
+        if (i % 2 == 1) withStyle(SpanStyle(background = bg, color = Color.Black, fontWeight = if (neon) FontWeight.ExtraBold else FontWeight.Bold)) { append(part) }
         else append(part)
     }
 }
@@ -52,7 +52,9 @@ fun AutoScrollTeleprompter(
 ) {
     val scroll = rememberScrollState()
     val words = remember(text) { wordCount(text) }
-    val annotated = remember(text) { parseHighlights(text) }
+    val annotated = remember(text, style.highlightColor, style.neonHighlight) {
+        parseHighlights(text, Color(style.highlightColor), style.neonHighlight)
+    }
     var textHeightPx by remember { mutableIntStateOf(0) }
 
     // Read live inside the long-running scroll loop without restarting it.
