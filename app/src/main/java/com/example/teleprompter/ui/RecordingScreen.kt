@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.camera.video.Quality
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -25,6 +26,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.teleprompter.camera.CameraRecorderManager
 import com.example.teleprompter.camera.RecState
 import com.example.teleprompter.engine.TeleprompterSession
+import com.example.teleprompter.engine.VoiceFollowController
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,9 +35,19 @@ import kotlinx.coroutines.launch
 
 class RecordingViewModel(app: Application) : AndroidViewModel(app) {
     val recorder = CameraRecorderManager(app)
+    private val voiceController = VoiceFollowController(app, viewModelScope)
     private val _countdown = MutableStateFlow(0)
     val countdown = _countdown.asStateFlow()
     private var job: Job? = null
+
+    init {
+        viewModelScope.launch { TeleprompterSession.text.collect { voiceController.setScript(it) } }
+        viewModelScope.launch {
+            TeleprompterSession.voiceFollow.collect { enabled ->
+                if (enabled) voiceController.start() else voiceController.stop()
+            }
+        }
+    }
 
     /** 3-2-1, then record and start scrolling together. */
     fun startWithCountdown(seconds: Int = 3) {
@@ -54,11 +66,14 @@ class RecordingViewModel(app: Application) : AndroidViewModel(app) {
         TeleprompterSession.isPlaying.value = false
     }
 
-    override fun onCleared() = recorder.release()
+    override fun onCleared() {
+        voiceController.stop()
+        recorder.release()
+    }
 }
 
 @Composable
-fun RecordingScreen(onBack: () -> Unit, vm: RecordingViewModel = viewModel()) {
+fun RecordingScreen(onBack: () -> Unit, cameraEnabled: Boolean = true, vm: RecordingViewModel = viewModel()) {
     val ctx = LocalContext.current
     val owner = LocalLifecycleOwner.current
     val s = TeleprompterSession
@@ -78,13 +93,15 @@ fun RecordingScreen(onBack: () -> Unit, vm: RecordingViewModel = viewModel()) {
     var muted by remember { mutableStateOf(false) }
     val previewView = remember { PreviewView(ctx).apply { scaleType = PreviewView.ScaleType.FILL_CENTER } }
 
-    LaunchedEffect(front, uhd) {
-        vm.recorder.bind(owner, previewView, front, if (uhd) Quality.UHD else Quality.FHD)
+    LaunchedEffect(front, uhd, cameraEnabled) {
+        if (cameraEnabled) vm.recorder.bind(owner, previewView, front, if (uhd) Quality.UHD else Quality.FHD)
+        else vm.recorder.release()
     }
     val recording = recState is RecState.Recording
 
     Box(Modifier.fillMaxSize()) {
-        AndroidView({ previewView }, Modifier.fillMaxSize())
+        if (cameraEnabled) AndroidView({ previewView }, Modifier.fillMaxSize())
+        else Box(Modifier.fillMaxSize().background(Color(0xFF08090D)))
 
         Row(
             Modifier.align(Alignment.TopCenter).fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
@@ -95,7 +112,7 @@ fun RecordingScreen(onBack: () -> Unit, vm: RecordingViewModel = viewModel()) {
                 Row(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text("●", color = Color(0xFFFFC857), fontSize = 11.sp)
                     Spacer(Modifier.width(7.dp))
-                    Text("EYE-LINE  •  CAMERA LENS", color = Color.White, fontSize = 10.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, letterSpacing = 0.6.sp)
+                    Text(if (cameraEnabled) "EYE-LINE  •  CAMERA LENS" else "TEXT-ONLY PROMPTER", color = Color.White, fontSize = 10.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, letterSpacing = 0.6.sp)
                 }
             }
             Surface(color = Color(0xCC08090D), shape = RoundedCornerShape(50)) {
@@ -135,11 +152,22 @@ fun RecordingScreen(onBack: () -> Unit, vm: RecordingViewModel = viewModel()) {
                         Icon(Icons.Default.FlipCameraAndroid, "Flip camera", tint = Color.White)
                     }
                     FilledIconButton(
-                        onClick = { if (recording || countdown > 0) vm.stop() else vm.startWithCountdown() },
+                        onClick = {
+                            if (cameraEnabled) {
+                                if (recording || countdown > 0) vm.stop() else vm.startWithCountdown()
+                            } else {
+                                TeleprompterSession.togglePlay()
+                            }
+                        },
                         modifier = Modifier.size(58.dp),
                         colors = IconButtonDefaults.filledIconButtonColors(containerColor = if (recording) Color(0xFFE5484D) else Color(0xFF00E5D4))
                     ) {
-                        Icon(if (recording) Icons.Default.Stop else Icons.Default.PlayArrow, if (recording) "Stop recording" else "Start recording", tint = if (recording) Color.White else Color(0xFF00201D), modifier = Modifier.size(27.dp))
+                        val pausedIcon = !cameraEnabled && playing
+                        Icon(
+                            when { recording -> Icons.Default.Stop; pausedIcon -> Icons.Default.Pause; else -> Icons.Default.PlayArrow },
+                            if (recording) "Stop recording" else if (cameraEnabled) "Start recording" else if (playing) "Pause scrolling" else "Start scrolling",
+                            tint = if (recording) Color.White else Color(0xFF00201D), modifier = Modifier.size(27.dp)
+                        )
                     }
                     IconButton({ muted = !muted; vm.recorder.setMuted(muted) }) {
                         Icon(if (muted) Icons.Default.MicOff else Icons.Default.Mic, if (muted) "Unmute" else "Mute", tint = if (muted) Color(0xFFE5484D) else Color.White)
