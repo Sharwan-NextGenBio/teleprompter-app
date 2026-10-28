@@ -19,7 +19,7 @@
 
     <application
         android:allowBackup="true"
-        android:label="Teleprompter"
+        android:label="PrompterPal"
         android:theme="@android:style/Theme.Material.NoActionBar">
 
         <activity android:name=".MainActivity" android:exported="true">
