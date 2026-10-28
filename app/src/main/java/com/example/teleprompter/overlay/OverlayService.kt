@@ -65,15 +65,22 @@ class OverlayService : LifecycleService(), SavedStateRegistryOwner, ViewModelSto
     private var root: ComposeView? = null
     private var mediaSession: MediaSessionCompat? = null
     private var voice: VoiceFollowController? = null
+    private val remotePreferenceListener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { prefs, key ->
+        if (key == "remote_enabled") {
+            if (prefs?.getBoolean("remote_enabled", true) == true) setupMediaSession()
+            else { mediaSession?.release(); mediaSession = null }
+        }
+    }
 
     override fun onCreate() {
         ssc.performAttach()          // must run before super.onCreate()
         ssc.performRestore(null)
         super.onCreate()
         wm = getSystemService(WINDOW_SERVICE) as WindowManager
+        getSharedPreferences("prompterpal_settings", MODE_PRIVATE).registerOnSharedPreferenceChangeListener(remotePreferenceListener)
         startAsForeground()
         showOverlay()
-        setupMediaSession()
+        if (getSharedPreferences("prompterpal_settings", MODE_PRIVATE).getBoolean("remote_enabled", true)) setupMediaSession()
         setupVoiceFollow()
     }
 
@@ -172,6 +179,7 @@ class OverlayService : LifecycleService(), SavedStateRegistryOwner, ViewModelSto
 
     override fun onDestroy() {
         voice?.stop()
+        getSharedPreferences("prompterpal_settings", MODE_PRIVATE).unregisterOnSharedPreferenceChangeListener(remotePreferenceListener)
         mediaSession?.release()
         root?.let { runCatching { wm.removeView(it) } }
         viewModelStore.clear()
