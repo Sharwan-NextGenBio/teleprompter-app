@@ -73,7 +73,12 @@ class RecordingViewModel(app: Application) : AndroidViewModel(app) {
 }
 
 @Composable
-fun RecordingScreen(onBack: () -> Unit, cameraEnabled: Boolean = true, vm: RecordingViewModel = viewModel()) {
+fun RecordingScreen(
+    onBack: () -> Unit,
+    cameraEnabled: Boolean = true,
+    onSettings: () -> Unit = {},
+    vm: RecordingViewModel = viewModel()
+) {
     val ctx = LocalContext.current
     val owner = LocalLifecycleOwner.current
     val s = TeleprompterSession
@@ -91,6 +96,7 @@ fun RecordingScreen(onBack: () -> Unit, cameraEnabled: Boolean = true, vm: Recor
     var front by remember { mutableStateOf(true) }
     var uhd by remember { mutableStateOf(false) }
     var muted by remember { mutableStateOf(false) }
+    var scriptExpanded by remember(cameraEnabled) { mutableStateOf(!cameraEnabled) }
     val previewView = remember { PreviewView(ctx).apply { scaleType = PreviewView.ScaleType.FILL_CENTER } }
 
     LaunchedEffect(front, uhd, cameraEnabled) {
@@ -116,14 +122,26 @@ fun RecordingScreen(onBack: () -> Unit, cameraEnabled: Boolean = true, vm: Recor
                 }
             }
             Surface(color = Color(0xCC08090D), shape = RoundedCornerShape(50)) {
-                Text("$wpm WPM", Modifier.padding(horizontal = 12.dp, vertical = 8.dp), color = Color(0xFF00E5D4), fontSize = 11.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("$wpm WPM", Modifier.padding(start = 10.dp), color = Color(0xFF00E5D4), fontSize = 11.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                    IconButton(onClick = { scriptExpanded = !scriptExpanded }, modifier = Modifier.size(40.dp)) {
+                        Icon(if (scriptExpanded) Icons.Default.FullscreenExit else Icons.Default.Fullscreen, if (scriptExpanded) "Minimize script" else "Expand script", tint = Color.White, modifier = Modifier.size(19.dp))
+                    }
+                    IconButton(onClick = onSettings, modifier = Modifier.size(40.dp)) {
+                        Icon(Icons.Default.Settings, "Studio settings", tint = Color.White, modifier = Modifier.size(19.dp))
+                    }
+                }
             }
         }
 
-        // Reading zone hugging the top edge, right under the selfie lens.
-        AutoScrollTeleprompter(
-            text, style.copy(bgAlpha = 0.82f), playing, wpm, voice, speaking, matched,
+        val scriptArea = if (scriptExpanded) {
+            Modifier.fillMaxSize().padding(start = 10.dp, end = 10.dp, top = 58.dp, bottom = 112.dp).align(Alignment.Center)
+        } else {
             Modifier.fillMaxWidth().fillMaxHeight(0.44f).padding(horizontal = 12.dp, vertical = 54.dp).align(Alignment.TopCenter)
+        }
+        AutoScrollTeleprompter(
+            text, style.copy(bgAlpha = if (scriptExpanded) 0.97f else 0.82f), playing, wpm, voice, speaking, matched,
+            scriptArea
         )
 
         if (countdown > 0) {
