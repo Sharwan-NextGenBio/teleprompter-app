@@ -30,5 +30,8 @@ object TeleprompterSession {
     val matchedWord = MutableStateFlow(0)
 
     fun togglePlay() = isPlaying.update { !it }
-    fun adjustWpm(delta: Int) = wpm.update { (it + delta).coerceIn(40, 400) }
+
+    fun adjustWpm(delta: Int) = wpm.update {
+        (it + delta).coerceIn(40, 400)
+    }
 }
