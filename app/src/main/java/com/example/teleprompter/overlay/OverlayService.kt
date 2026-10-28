@@ -123,7 +123,7 @@ class OverlayService : LifecycleService(), SavedStateRegistryOwner, ViewModelSto
             setViewTreeSavedStateRegistryOwner(this@OverlayService)
             setViewTreeViewModelStoreOwner(this@OverlayService)
             setContent {
-                MaterialTheme(colorScheme = darkColorScheme()) {
+                MaterialTheme(colorScheme = darkColorScheme(primary = Color(0xFF00E5D4), secondary = Color(0xFF67DAD0))) {
                     OverlayTeleprompter(
                         onDrag = { dx, dy -> lp.x += dx.toInt(); lp.y += dy.toInt(); wm.updateViewLayout(this, lp) },
                         onResize = { dx, dy ->
