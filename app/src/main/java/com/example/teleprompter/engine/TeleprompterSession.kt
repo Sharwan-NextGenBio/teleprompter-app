@@ -9,6 +9,8 @@ object TeleprompterSession {
     data class Style(
         val fontSizeSp: Float = 32f,
         val textColor: Long = 0xFFFFFFFF,
+        val highlightColor: Long = 0xFF00E5D4,
+        val neonHighlight: Boolean = false,
         val marginDp: Float = 16f,
         val bgAlpha: Float = 0.7f,
         val mirrorH: Boolean = false,
