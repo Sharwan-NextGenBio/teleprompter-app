@@ -127,6 +127,10 @@ private fun AppRoot(darkTheme: Boolean, onDarkThemeChange: (Boolean) -> Unit) {
     var showSettings by remember { mutableStateOf(false) }
     var cameraEnabled by remember { mutableStateOf(appPrefs.getBoolean("camera_enabled", true)) }
     var remoteEnabled by remember { mutableStateOf(appPrefs.getBoolean("remote_enabled", true)) }
+    var activeScriptId by remember { mutableStateOf<Long?>(null) }
+    var saveDialog by remember { mutableStateOf(false) }
+    var saveTitle by remember { mutableStateOf("") }
+    var scriptToDelete by remember { mutableStateOf<ScriptEntity?>(null) }
 
     LaunchedEffect(wpm, style.fontSizeSp, style.highlightColor, style.neonHighlight) {
         appPrefs.edit()
@@ -153,11 +157,6 @@ private fun AppRoot(darkTheme: Boolean, onDarkThemeChange: (Boolean) -> Unit) {
         )
         if (currentId == null && id > 0) activeScriptId = id
     }
-    var activeScriptId by remember { mutableStateOf<Long?>(null) }
-    var saveDialog by remember { mutableStateOf(false) }
-    var saveTitle by remember { mutableStateOf("") }
-    var scriptToDelete by remember { mutableStateOf<ScriptEntity?>(null) }
-
     val studioPermissions = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { result ->
@@ -310,7 +309,6 @@ private fun AppRoot(darkTheme: Boolean, onDarkThemeChange: (Boolean) -> Unit) {
                         textStyle = LocalTextStyle.current.copy(fontSize = 20.sp, lineHeight = 30.sp, fontWeight = FontWeight.Medium),
                         shape = RoundedCornerShape(16.dp),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Accent.copy(alpha = 0.8f),
                             focusedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
                             unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
                             focusedContainerColor = MaterialTheme.colorScheme.background,
@@ -566,4 +564,3 @@ private suspend fun readScriptsFromTree(context: android.content.Context, treeUr
         visit(root)
         imported
     }
- 
